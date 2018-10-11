@@ -19,10 +19,30 @@
   <li
     nz-menu-item
     routerLinkActive="ant-menu-item-selected"
-    style="float: right"
   >
-    <a routerLink="settings">
-      <i class="anticon anticon-setting"></i>
+    <a routerLink="vk">
+      <i class="anticon anticon-mobile"></i>
+      VK
+    </a>
+  </li>
+  <li
+    nz-menu-item
+    routerLinkActive="ant-menu-item-selected"
+    style="float: right"
+    *ngIf="!isLogged()"
+  >
+    <a (click)="login()" disabled="true">
+      <i class="anticon anticon-login" style="color: green"></i>
+    </a>
+  </li>
+  <li
+    nz-menu-item
+    routerLinkActive="ant-menu-item-selected"
+    style="float: right"
+    *ngIf="isLogged()"
+  >
+    <a (click)="logout()" disabled="true">
+      <i class="anticon anticon-logout" style="color: red"></i>
     </a>
   </li>
 </ul>

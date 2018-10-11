@@ -13,6 +13,12 @@ import { registerLocaleData } from '@angular/common';
 import en from '@angular/common/locales/en';
 import { DiffComponent } from './diff/diff.component';
 import { SettingsComponent } from './settings/settings.component';
+import {AuthService} from "./auth/auth.service";
+import { CallbackComponent } from './auth/callback/callback.component';
+import {AuthGuard} from "./auth/auth.guard";
+import { LoginPageComponent } from './login-page/login-page.component';
+import { VkToolsComponent } from './vk-tools/vk-tools.component';
+import {VkService} from "./vk-tools/vk.service";
 
 registerLocaleData(en);
 
@@ -23,6 +29,9 @@ registerLocaleData(en);
     HeaderComponent,
     DiffComponent,
     SettingsComponent,
+    CallbackComponent,
+    LoginPageComponent,
+    VkToolsComponent,
   ],
   imports: [
     BrowserModule,
@@ -31,8 +40,13 @@ registerLocaleData(en);
     BrowserAnimationsModule,
     HttpClientModule,
     NgZorroAntdModule,
+    HttpClientModule,
   ],
-  providers: [{ provide: NZ_I18N, useValue: en_US }],
+  providers: [
+    { provide: NZ_I18N, useValue: en_US },
+    AuthService,
+    VkService,
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
