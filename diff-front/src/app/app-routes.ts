@@ -35,7 +35,11 @@ const routes: Routes = [
   {
     path: 'vk',
     component: VkToolsComponent,
-  }
+  },
+  {
+    path: 'vklogin',
+    redirectTo: 'vk'
+  },
 ];
 
 @NgModule({

@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {AuthService} from "./auth/auth.service";
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,11 @@ import {AuthService} from "./auth/auth.service";
 })
 export class AppComponent {
 
-  constructor(private authService: AuthService) {
-    authService.handleAuthentication();
+  constructor(private authService: AuthService, private activatedRoute: ActivatedRoute) {
+    this.activatedRoute.fragment.subscribe(data => {
+      if (data) {
+
+      }
+    });
   }
 }

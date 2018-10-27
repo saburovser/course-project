@@ -1,1 +1,15 @@
-<button nz-button (click)="login()"></button>
+<div nz-row>
+  <div nz-col [nzSpan]="10">
+    <input
+      type="text"
+      nz-input
+      [nzSize]="'large'"
+      [(ngModel)]="albumUrl"
+    >
+    <button nz-button (click)="loadPhotos()"></button>
+    <h1>{{ imageUrls.length }}</h1>
+    <p *ngFor="let img of imageUrls">{{ img }}</p>
+  </div>
+</div>
+
+
