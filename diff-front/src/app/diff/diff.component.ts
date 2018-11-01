@@ -8,55 +8,73 @@ import {st} from "@angular/core/src/render3";
 })
 export class DiffComponent implements OnInit {
   func: string;
+  errors: string[] = [];
 
-  testFuncs: Func[] = [
-    new Func('cos', /\bcos\b\([^\(\)]+\)/g),
-    new Func('sin', /\bsin\b\([^\(\)]+\)/g),
-    new Func('tan', /\btan\b\([^\(\)]+\)/g),
-    new Func('atan', /\batan\b\([^\(\)]+\)/g),
-    new Func('e^', /e\^\([^\(\)]+\)/g)
+  operators = [
+    '+',
+    '-',
+    '*',
+    '/',
+    '^',
   ];
 
-  m = [];
+
 
   constructor() {
 
   }
 
   ngOnInit() {
-    this.func = localStorage.getItem('func');
   }
 
   funcChange(e) {
-    this.func = e;
-    localStorage.setItem('func', e);
-    this.findFunc();
+    this.func = e.match(/[0-9A-Za-z+\-*/^()]*/);
+    this.checkForErrors(e);
   }
 
-  findFunc() {
-    this.m = [];
-    for (let f of this.testFuncs) {
-      let regex = f.regex;
-      while (true) {
-        let t = regex.exec(this.func);
-        if (t === null) {
-          break;
+  checkForErrors(func: string) {
+    this.errors = [];
+    this.checkParenthesesBalance(func);
+    this.checkAdjacentOperators(func);
+    this.checkStartEnd(func);
+  }
+
+  checkParenthesesBalance(func: string) {
+    let parentheses: string[] = [];
+    if (func[0] === '(') {
+      parentheses.push(func[0]);
+    }
+    for (let i = 1; i < func.length; i++) {
+      if (['(', ')'].includes(func[i])) {
+        parentheses.push(func[i]);
+        if (parentheses[parentheses.length - 2] === '(' && parentheses[parentheses.length - 1] === ')') {
+          parentheses.pop();
+          parentheses.pop();
         }
-        this.m.push({
-          name: f.funcName,
-          arg: this.func.slice(t.index + f.funcName.length + 1, regex.lastIndex - 1)
-        });
+      }
+    }
+
+    if (parentheses.length !== 0) {
+      this.errors.push('Не соблюден баланс скобок');
+    }
+  }
+
+  checkAdjacentOperators(func: string) {
+    for (let i = 1; i < func.length; i++) {
+      if (this.operators.includes(func[i]) && this.operators.includes(func[i-1])) {
+        this.errors.push('Два оператора подряд');
+        break;
       }
     }
   }
-}
 
-export class Func {
-  funcName: string;
-  regex: RegExp;
+  checkStartEnd(func: string) {
+    if (this.operators.includes(func[0]) || this.operators.includes(func[func.length - 1])) {
+      this.errors.push('Оператор в начале/конце строки');
+    }
+  }
 
-  constructor(name: string, regex: RegExp) {
-    this.funcName = name;
-    this.regex = regex;
+  diff() {
+
   }
 }

@@ -23,7 +23,7 @@
     "@angular/router": "^6.0.3",
     "auth0-js": "^9.8.0",
     "core-js": "^2.5.4",
-    "ng-zorro-antd": "^1.4.0",
+    "ng-zorro-antd": "^1.8.0",
     "normalize.css": "^8.0.0",
     "rxjs": "^6.0.0",
     "vk-io": "^4.0.0-rc.6",

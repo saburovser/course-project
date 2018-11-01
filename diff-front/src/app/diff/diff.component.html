@@ -4,27 +4,14 @@
       <div nz-col [nzSpan]="12">
         <input
           type="text"
-          nz-input nzSize="large"
+          nz-input [nzSize]="'large'"
           placeholder="Введите функцию"
           [ngModel]="func"
           (ngModelChange)="funcChange($event)"
           style="width: 88%"
         >
-        <button nz-button [nzType]="'primary'" [nzSize]="'large'" (click)="findFunc()">DIFF</button>
-        <nz-table #funcTable [nzData]="m">
-          <thead>
-            <tr>
-              <th>Функция</th>
-              <th>Аргумент</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let data of funcTable.data">
-              <td>{{ data.name }}</td>
-              <td>{{ data.arg }}</td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <button nz-button [nzType]="'primary'" [nzSize]="'large'" (click)="diff()">DIFF</button>
+        <nz-alert style="margin-top: 5px" *ngFor="let err of errors" [nzType]="'error'" [nzMessage]="err"></nz-alert>
       </div>
       <div nz-col [nzSpan]="12"></div>
     </div>

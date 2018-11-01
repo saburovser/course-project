@@ -1,7 +1,6 @@
 <ul nz-menu [nzMode]="'horizontal'" style="margin-bottom: 20px">
   <li
     nz-menu-item
-    routerLinkActive="ant-menu-item-selected"
   >
     <a routerLink="">
       <i class="anticon anticon-home"></i>
@@ -30,8 +29,9 @@
     routerLinkActive="ant-menu-item-selected"
     style="float: right"
     *ngIf="!isLogged()"
+    [nzDisabled]="true"
   >
-    <a (click)="login()" disabled="true">
+    <a (click)="login()">
       <i class="anticon anticon-login" style="color: green"></i>
     </a>
   </li>
@@ -40,8 +40,9 @@
     routerLinkActive="ant-menu-item-selected"
     style="float: right"
     *ngIf="isLogged()"
+    [nzDisabled]="true"
   >
-    <a (click)="logout()" disabled="true">
+    <a (click)="logout()">
       <i class="anticon anticon-logout" style="color: red"></i>
     </a>
   </li>
