@@ -6,12 +6,20 @@
           type="text"
           nz-input [nzSize]="'large'"
           placeholder="Введите функцию"
+          (keypress)="_keyPress($event)"
           [ngModel]="func"
           (ngModelChange)="funcChange($event)"
           style="width: 88%"
         >
-        <button nz-button [nzType]="'primary'" [nzSize]="'large'" (click)="diff()">DIFF</button>
+        <button
+          nz-button
+          [nzType]="'primary'"
+          [nzSize]="'large'"
+          (click)="diff()"
+          [disabled]="errors.length !== 0 || func === ''"
+        >DIFF</button>
         <nz-alert style="margin-top: 5px" *ngFor="let err of errors" [nzType]="'error'" [nzMessage]="err"></nz-alert>
+        <span style="font-size: 16px" *ngFor="let term of terms">{{ term + " " }}</span>
       </div>
       <div nz-col [nzSpan]="12"></div>
     </div>
