@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {tryCatch} from "rxjs/internal-compatibility";
 
 @Component({
   selector: 'app-diff',
@@ -26,6 +27,15 @@ export class DiffComponent implements OnInit {
     '^': 3,
   };
 
+  knownFunctions = [
+    'sin',
+    'cos',
+    'tan',
+    'tg',
+    'atan',
+    'ctg',
+  ];
+
   constructor() {
 
   }
@@ -50,12 +60,15 @@ export class DiffComponent implements OnInit {
 
   checkForErrors(func: string) {
     this.errors = [];
-    this.checkParenthesesBalance(func);
+    if (this.checkParenthesesBalance(func)) {
+      this.checkUnknownFunctions(func);
+    }
     this.checkAdjacentOperators(func);
     this.checkStartEnd(func);
+    this.checkEmptyParentheses(func);
   }
 
-  checkParenthesesBalance(func: string) {
+  checkParenthesesBalance(func: string): boolean {
     let parentheses: string[] = [];
     if (func[0] === '(') {
       parentheses.push(func[0]);
@@ -72,6 +85,8 @@ export class DiffComponent implements OnInit {
 
     if (parentheses.length !== 0) {
       this.errors.push('Не соблюден баланс скобок');
+    } else {
+      return true;
     }
   }
 
@@ -87,6 +102,57 @@ export class DiffComponent implements OnInit {
   checkStartEnd(func: string) {
     if (this.operators.includes(func[0]) || this.operators.includes(func[func.length - 1])) {
       this.errors.push('Оператор в начале/конце строки');
+    }
+  }
+
+  checkEmptyParentheses(func: string) {
+    let chLeft = func[0];
+
+    for (let i = 1; i < func.length; i++) {
+      if (func[i] === ')' && chLeft === '(') {
+        this.errors.push('Пустые скобки');
+        break;
+      }
+      chLeft = func[i];
+    }
+  }
+
+  checkUnknownFunctions(func: string) {
+    let funct = '';
+    let unknownFunctions: string[] = [];
+
+    for (let i = 0; i < func.length; i++) {
+      if (/([a-z])+/.test(func[i])) {
+        try {
+
+          funct = this.getFunction(func.slice(i));
+
+          let functName = '';
+          for (let i = 0; i < funct.length; i++) {
+            if (funct[i] === '(') {
+              break;
+            } else {
+              functName += funct[i];
+            }
+          }
+
+          if (!this.knownFunctions.includes(functName)) {
+            unknownFunctions.push(functName);
+          }
+
+          i += funct.length;
+        } catch (e) {
+
+        }
+      }
+    }
+
+    const fsString = unknownFunctions.reduce( (fs, f) => {
+      return fs + ', ' + f;
+    }, '');
+
+    if (fsString.length) {
+      this.errors.push('Введеные неизвестные функции: ' + fsString.slice(2));
     }
   }
 
@@ -148,10 +214,14 @@ export class DiffComponent implements OnInit {
     this.terms = output;
   }
 
+  // TODO возвращать объект с функцией и аргументом, а не строку
   getFunction(exp: string) {
     let func = exp[0];
     let pos = 1;
 
+    if (exp.length === 1) {
+      throw new Error();
+    }
     while (pos < exp.length) {
       const ch = exp[pos];
 
