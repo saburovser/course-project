@@ -94,148 +94,6 @@ export class DiffComponent implements OnInit {
     this.getRPN(this.func);
   }
 
-  // getTree(exp: string) {
-  //   let pos = 0;
-  //   let func = '';
-  //   let leftOperand = '';
-  //   let rightOperand;
-  //
-  //   let blocks = [];
-  //
-  //   let block;
-  //
-  //   while (pos < exp.length) {
-  //     const ch = exp.charAt(pos);
-  //
-  //     if (/([A-Za-z])+/.test(ch)) {
-  //       leftOperand += ch;
-  //       pos++;
-  //       console.log(leftOperand);
-  //
-  //       continue;
-  //     }
-  //
-  //     if (ch === '(') {
-  //       console.log('Нашел блок');
-  //
-  //       const arg = this.findBlock(exp.slice(pos));
-  //       pos += arg.length + 2;
-  //
-  //       leftOperand += arg;
-  //
-  //       blocks.push(leftOperand);
-  //       console.log(leftOperand);
-  //       continue;
-  //     }
-  //
-  //     if (this.operators.includes(ch)) {
-  //
-  //       let blockToRight = '';
-  //
-  //       if (this.weakOperators.includes(ch)) {
-  //         console.log('Нашел слабый оператор');
-  //
-  //         let parentheses = [];
-  //         let sym = '';
-  //         for (let i = pos + 1; i < exp.length ; i++) {
-  //           sym = exp[i];
-  //
-  //           if (this.weakOperators.includes(sym) && parentheses.length === 0) {
-  //             break;
-  //           }
-  //
-  //           blockToRight += sym;
-  //           if (exp[i] === '(' || exp[i] === ')') {
-  //             parentheses.push(exp[i]);
-  //             if (parentheses[parentheses.length - 2] === '(' && parentheses[parentheses.length - 1] === ')') {
-  //               parentheses.pop();
-  //               parentheses.pop();
-  //             }
-  //           }
-  //
-  //         }
-  //       }
-  //       else if (this.mediumOperators.includes(ch)) {
-  //         console.log('Нашел средний оператор');
-  //
-  //         let parentheses = [];
-  //         let sym = '';
-  //         for (let i = pos + 1; i < exp.length ; i++) {
-  //           sym = exp[i];
-  //
-  //           if (this.weakOperators.concat(this.mediumOperators).includes(sym) && parentheses.length === 0) {
-  //             break;
-  //           }
-  //
-  //           blockToRight += sym;
-  //           if (exp[i] === '(' || exp[i] === ')') {
-  //             parentheses.push(exp[i]);
-  //             if (parentheses[parentheses.length - 2] === '(' && parentheses[parentheses.length - 1] === ')') {
-  //               parentheses.pop();
-  //               parentheses.pop();
-  //             }
-  //           }
-  //
-  //         }
-  //       } else {
-  //         console.log('Нашел сильный оператор');
-  //
-  //         let parentheses = [];
-  //         let sym = '';
-  //         for (let i = pos + 1; i < exp.length ; i++) {
-  //           sym = exp[i];
-  //
-  //           if (this.operators.includes(sym) && parentheses.length === 0) {
-  //             break;
-  //           }
-  //
-  //           blockToRight += sym;
-  //           if (exp[i] === '(' || exp[i] === ')') {
-  //             parentheses.push(exp[i]);
-  //             if (parentheses[parentheses.length - 2] === '(' && parentheses[parentheses.length - 1] === ')') {
-  //               parentheses.pop();
-  //               parentheses.pop();
-  //             }
-  //           }
-  //
-  //         }
-  //       }
-  //
-  //       blocks.push({
-  //         operator: ch,
-  //         leftOperand: blocks[blocks.length - 1],
-  //         rightOperand: blockToRight,
-  //       });
-  //
-  //       pos += blockToRight.length;
-  //       continue;
-  //     }
-  //     pos++;
-  //   }
-  //
-  //   console.log(blocks);
-  // }
-  //
-  // findBlock(exp: string) {
-  //   let parentheses: string[] = [];
-  //   parentheses.push(exp[0]);
-  //
-  //   for (let i = 1; i < exp.length; i++) {
-  //     if (['(', ')'].includes(exp[i])) {
-  //       parentheses.push(exp[i]);
-  //
-  //       if (parentheses[parentheses.length - 2] === '(' && parentheses[parentheses.length - 1] === ')') {
-  //         parentheses.pop();
-  //         parentheses.pop();
-  //       }
-  //
-  //       if (parentheses.length === 0) {
-  //         return exp.slice(1, i);
-  //       }
-  //     }
-  //   }
-  // }
-
   getRPN(exp: string) {
     let output: string[] = [];
     let stack: string[] = [];
@@ -254,6 +112,22 @@ export class DiffComponent implements OnInit {
       } else if (ch === '(') {
         block = this.getBlock(exp);
         output.push(block);
+      } else if (ch.match(/[0-9]/)) {
+        block = this.getNumber(exp);
+
+        if (block[block.length - 1] === '*') {
+          block = block.slice(0, block.length - 1);
+          output.push(block);
+
+          if (this.priorities[stack[stack.length - 1]] >= this.priorities['*']) {
+            output.push(stack.pop());
+            stack.push('*');
+          } else {
+            stack.push('*');
+          }
+        } else {
+          output.push(block);
+        }
       } else {
         block = ch;
         if (!stack.length) {
@@ -331,5 +205,22 @@ export class DiffComponent implements OnInit {
       }
     }
     return block;
+  }
+
+  getNumber(exp: string) {
+    let num = exp[0];
+
+    for (let i = 1; i < exp.length; i++) {
+      const ch = exp[i];
+      if (ch.match(/[0-9]/)) {
+        num += ch;
+      } else if (this.operators.includes(ch)) {
+        break;
+      } else {
+        num += '*';
+        break;
+      }
+    }
+    return num;
   }
 }
