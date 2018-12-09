@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import {tryCatch} from "rxjs/internal-compatibility";
 
 @Component({
   selector: 'app-diff',
@@ -9,7 +8,7 @@ import {tryCatch} from "rxjs/internal-compatibility";
 export class DiffComponent implements OnInit {
   func: string = '';
   errors: string[] = [];
-  terms: string[] = [];
+  terms: any[] = [];
 
   operators = [
     '+',
@@ -125,7 +124,7 @@ export class DiffComponent implements OnInit {
       if (/([a-z])+/.test(func[i])) {
         try {
 
-          funct = this.getFunction(func.slice(i));
+          funct = this.getFunction(func.slice(i)).value.name;
 
           let functName = '';
           for (let i = 0; i < funct.length; i++) {
@@ -157,13 +156,13 @@ export class DiffComponent implements OnInit {
   }
 
   diff() {
-    this.getRPN(this.func);
+    console.log(this.getTree(this.func));
   }
 
-  getRPN(exp: string) {
-    let output: string[] = [];
+  getTree(exp: string) {
+    let output = [];
     let stack: string[] = [];
-    let block = '';
+    let block;
     while (exp.length) {
       const ch = exp[0];
 
@@ -171,7 +170,7 @@ export class DiffComponent implements OnInit {
         try {
           block = this.getFunction(exp);
         } catch (e) {
-          block = ch;
+          block = new Node(NodeTypes.Constant, ch, ch.length);
         } finally {
           output.push(block);
         }
@@ -180,20 +179,7 @@ export class DiffComponent implements OnInit {
         output.push(block);
       } else if (ch.match(/[0-9]/)) {
         block = this.getNumber(exp);
-
-        if (block[block.length - 1] === '*') {
-          block = block.slice(0, block.length - 1);
-          output.push(block);
-
-          if (this.priorities[stack[stack.length - 1]] >= this.priorities['*']) {
-            output.push(stack.pop());
-            stack.push('*');
-          } else {
-            stack.push('*');
-          }
-        } else {
-          output.push(block);
-        }
+        output.push(block);
       } else {
         block = ch;
         if (!stack.length) {
@@ -211,12 +197,31 @@ export class DiffComponent implements OnInit {
       output.push(stack.pop());
     }
     console.log(output);
-    this.terms = output;
+    // this.terms = output;
+
+    let tree = {};
+    let treeStack = [];
+    debugger;
+    output.filter( el => {
+      if (el.type === NodeTypes.Function) {
+        treeStack.push(new Node(NodeTypes.Function, new Func(el.value.name, this.getTree(el.value.arg))));
+      } else if (el.type === NodeTypes.Block) {
+        treeStack.push(this.getTree(el.value));
+      } else if (el.type !== undefined) {
+        treeStack.push(el);
+      } else {
+        tree = new Node(NodeTypes.Operator, new Operator(el, treeStack[treeStack.length - 2], treeStack[treeStack.length - 1]));
+        treeStack.pop();
+        treeStack.pop();
+        treeStack.push(tree);
+      }
+    });
+    return tree;
   }
 
-  // TODO возвращать объект с функцией и аргументом, а не строку
   getFunction(exp: string) {
     let func = exp[0];
+    let arg = '';
     let pos = 1;
 
     if (exp.length === 1) {
@@ -242,8 +247,8 @@ export class DiffComponent implements OnInit {
             }
 
             if (parentheses.length === 0) {
-               func += exp.slice(pos, i + 1);
-               return func;
+               arg += exp.slice(pos, i + 1);
+               return new Node(NodeTypes.Function, new Func(func, arg.slice(1, arg.length - 1)), func.length + arg.length);
             }
           }
         }
@@ -251,11 +256,12 @@ export class DiffComponent implements OnInit {
         throw new Error();
       }
     }
-    return func;
+    return new Node(NodeTypes.Function, new Func(func, arg.slice(1, arg.length - 1)), func.length + arg.length);
+    // console.error('если попали сюда, то что-то определенно не так');
   }
 
   getBlock(exp: string) {
-    let block = '(';
+    let block = '';
     let parentheses: string[] = [];
     parentheses.push('(');
 
@@ -274,7 +280,7 @@ export class DiffComponent implements OnInit {
         }
       }
     }
-    return block;
+    return new Node(NodeTypes.Block, block.slice(1, block.length - 1), block.length);
   }
 
   getNumber(exp: string) {
@@ -286,11 +292,71 @@ export class DiffComponent implements OnInit {
         num += ch;
       } else if (this.operators.includes(ch)) {
         break;
-      } else {
-        num += '*';
-        break;
       }
     }
-    return num;
+    return new Node(NodeTypes.Number, num, num.length);
   }
+}
+
+export class Node {
+  type: number;
+  value: any;
+  length: number;
+
+  get view(): string {
+    switch (this.type) {
+      case NodeTypes.Function:
+        return this.value.name + '(' + this.value.arg + ')';
+      case NodeTypes.Number:
+        return this.value;
+      case NodeTypes.Block:
+        return this.value;
+      case NodeTypes.Constant:
+        return this.value;
+      case NodeTypes.Operator:
+        return this.value.view
+    }
+
+  }
+
+  constructor(type: number, value: any, length?: number) {
+    this.type = type;
+    this.value = value;
+    this.length = length;
+  }
+}
+
+export class Func {
+  name: string;
+  arg: any;
+
+  constructor(name: string, arg: any) {
+    this.name = name;
+    this.arg = arg;
+  }
+}
+
+export class Operator {
+  name: string;
+  arg1: Node;
+  arg2: Node;
+
+  constructor(name: string, arg1: Node, arg2: Node) {
+    this.name = name;
+    this.arg1 = arg1;
+    this.arg2 = arg2;
+  }
+
+  get view(): string {
+    return this.arg1.view + this.name + this.arg2.view;
+  }
+}
+
+export enum NodeTypes {
+  Constant,
+  Variable,
+  Function,
+  Block,
+  Number,
+  Operator,
 }
