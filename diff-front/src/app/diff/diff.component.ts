@@ -17,7 +17,8 @@ export class DiffComponent implements OnInit {
   selectedVariable: string = '';
   isMultivariable: boolean = false;
 
-  addingFuncName:
+  addingFuncName: string = '';
+  addingFuncDiff: string = '';
 
   operators = [
     '+',
@@ -44,23 +45,17 @@ export class DiffComponent implements OnInit {
     'ctg',
   ];
 
-  diffs: {func: string, diff: string}[] = [
-    {
-      func: 'sin(x)',
-      diff: 'cos(x)',
-    },
-    {
-      func: 'cos(x)',
-      diff: '-sin(x)'
-    }
-  ];
+  diffs: {func: string, diff: string}[] = [];
 
   constructor(private diffTableService: DiffTableService) {
 
   }
 
   ngOnInit() {
-
+    let diffsFromStorage = JSON.parse(localStorage.getItem('diffs'));
+    if (diffsFromStorage) {
+      this.diffs = diffsFromStorage;
+    }
   }
 
   _keyPress(event: any) {
@@ -70,6 +65,31 @@ export class DiffComponent implements OnInit {
     if (!pattern.test(inputChar)) {
       event.preventDefault();
     }
+  }
+
+  addFunc() {
+    let addingFunc = {
+      func: this.addingFuncName,
+      diff: this.addingFuncDiff,
+    };
+    if (this.diffs && this.diffs.find(el => el.func === addingFunc.func)) {
+      alert('Функция с таким именем уже есть!');
+    } else {
+      this.diffs.push(addingFunc);
+      this.addingFuncName = '';
+      this.addingFuncDiff = '';
+      this.diffs = [...this.diffs];
+    }
+    localStorage.setItem('diffs', JSON.stringify(this.diffs));
+    this.checkForErrors(this.func);
+  }
+
+  deleteFunc(e: any, func) {
+    e.preventDefault();
+    this.diffs.splice(this.diffs.indexOf(func), 1);
+    this.diffs = [...this.diffs];
+    localStorage.setItem('diffs', JSON.stringify(this.diffs));
+    this.checkForErrors(this.func);
   }
 
   funcChange(e) {
@@ -155,7 +175,7 @@ export class DiffComponent implements OnInit {
             }
           }
 
-          if (!this.knownFunctions.includes(functName)) {
+          if (!this.diffs.find(el => el.func === (functName + '(x)'))) {
             unknownFunctions.push(functName);
           }
 
@@ -176,6 +196,7 @@ export class DiffComponent implements OnInit {
   }
 
   diff() {
+    this.variables = [];
     // @ts-ignore
     this.tree = this.getTree(this.func);
 
@@ -193,6 +214,9 @@ export class DiffComponent implements OnInit {
 
   diffMulti() {
     this.isMultivariable = false;
+    this.setVar(this.tree);
+    // debugger;
+    this.res = this.getNodeDiff(this.tree);
   }
 
   getTree(exp: string) {
@@ -373,12 +397,44 @@ export class DiffComponent implements OnInit {
         return '0';
       case NodeTypes.Operator:
         if (node.value.name === '+' || node.value.name === '-') {
-          return '(' + node.value.arg1.diff + node.value.name + node.value.arg2.diff + ')';
+          return '(' + this.getNodeDiff(node.value.arg1) + node.value.name + this.getNodeDiff(node.value.arg2) + ')';
         } else if (node.value.name === '*') {
-          return '(' + node.value.arg1.diff + '*' + node.value.arg2.view + '+' + node.value.arg2.diff + '*' + node.value.arg1.view + ')';
+          return '(' + this.getNodeDiff(node.value.arg1) + '*' +
+            this.getNodeView(node.value.arg2) + '+' +
+            this.getNodeDiff(node.value.arg2) + '*' +
+            this.getNodeView(node.value.arg1) + ')';
         } else if (node.value.name === '/') {
-          return '(' + node.value.arg1.diff + '*' + node.value.arg2.view + '-' + node.value.arg2.diff + '*' + node.value.arg1.view + ')' + '/(' + node.value.arg2.view + ')^2';
+          return '(' + this.getNodeDiff(node.value.arg1) + '*' +
+            this.getNodeView(node.value.arg2) + '-' +
+            this.getNodeDiff(node.value.arg2) + '*' +
+            this.getNodeView(node.value.arg1) + ')' + '/(' +
+            this.getNodeView(node.value.arg2) + ')^2';
+        } else if (node.value.name === '^') {
+          if (node.value.arg2.type === NodeTypes.Constant) {
+            return node.value.arg2.value + '*(' + this.getNodeView(node.value.arg1) + ')' + '^(' +
+              node.value.arg2.value + '-1)*' + this.getNodeDiff(node.value.arg1);
+          } else if (node.value.arg2.type === NodeTypes.Number) {
+            return node.value.arg2.value + '*(' + this.getNodeView(node.value.arg1) + ')^' +
+              (node.value.arg2.value - 1) + '*' + this.getNodeDiff(node.value.arg1);
+          }
         }
+    }
+  }
+
+  setVar(node: Node) {
+    switch (node.type) {
+      case NodeTypes.Operator:
+        this.setVar(node.value.arg1);
+        this.setVar(node.value.arg2);
+        break;
+      case NodeTypes.Function:
+        this.setVar(node.value.arg);
+        break;
+      case NodeTypes.Variable:
+        if (node.value !== this.selectedVariable) {
+          node.type = NodeTypes.Constant;
+        }
+        break;
     }
   }
 }
@@ -387,50 +443,6 @@ export class Node {
   type: number;
   value: any;
   length: number;
-
-  // get view(): string {
-  //   switch (this.type) {
-  //     case NodeTypes.Function:
-  //       return this.value.name + '(' + this.value.arg.view + ')';
-  //     case NodeTypes.Number:
-  //       return this.value;
-  //     case NodeTypes.Block:
-  //       return '(' + this.value + ')';
-  //     case NodeTypes.Variable:
-  //       return '(' + this.value + ')';
-  //     case NodeTypes.Operator:
-  //       return this.value.view;
-  //     case NodeTypes.Constant:
-  //       return '(' + this.value.view + ')';
-  //   }
-  //
-  // }
-
-  // get diff(): string {
-  //   switch (this.type) {
-  //     case NodeTypes.Function:
-  //       if (this.value.arg.type === NodeTypes.Variable) {
-  //         return this.diffs[this.value.name] + this.value.arg.view;
-  //       } else if (this.value.arg.type === NodeTypes.Constant) {
-  //         return '0';
-  //       }
-  //       return this.diffs[this.value.name] + '(' + this.value.arg.view + ')' + '*(' + this.value.arg.diff + ')';
-  //     case NodeTypes.Variable:
-  //       return '1';
-  //     case NodeTypes.Constant:
-  //       return '0';
-  //     case NodeTypes.Number:
-  //       return '0';
-  //     case NodeTypes.Operator:
-  //       if (this.value.name === '+' || this.value.name === '-') {
-  //         return '(' + this.value.arg1.diff + this.value.name + this.value.arg2.diff + ')';
-  //       } else if (this.value.name === '*') {
-  //         return '(' + this.value.arg1.diff + '*' + this.value.arg2.view + '+' + this.value.arg2.diff + '*' + this.value.arg1.view + ')';
-  //       } else if (this.value.name === '/') {
-  //         return '(' + this.value.arg1.diff + '*' + this.value.arg2.view + '-' + this.value.arg2.diff + '*' + this.value.arg1.view + ')' + '/(' + this.value.arg2.view + ')^2';
-  //       }
-  //   }
-  // }
 
   constructor(type: number, value: any, length?: number) {
     this.type = type;

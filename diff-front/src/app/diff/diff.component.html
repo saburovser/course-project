@@ -28,7 +28,7 @@
         <nz-radio-group style="margin-top: 5px;" *ngIf="isMultivariable" [(ngModel)]="selectedVariable" nzName="selectedVariable">
           <label *ngFor="let variable of variables" nz-radio [nzValue]="variable">{{ variable }}</label>
         </nz-radio-group>
-        <nz-alert *ngIf="res && res.length" style="margin-top: 5px" nzType="success" [nzMessage]="res"></nz-alert>
+        <nz-alert *ngIf="res && res.length" style="margin-top: 5px; width: 99%" nzType="success" [nzMessage]="res"></nz-alert>
         <button
           *ngIf="isMultivariable"
           nz-button
@@ -40,7 +40,7 @@
 
       <!--Таблица-список функций-->
       <div nz-col [nzSpan]="12">
-        <nz-table #diffTable [nzData]="diffs">
+        <nz-table #diffTable [nzData]="diffs" [nzShowPagination]="false">
           <thead>
             <tr>
               <th>Функция</th>
@@ -51,21 +51,31 @@
             <tr *ngFor="let func of diffTable.data">
               <td>{{ func.func }}</td>
               <td>{{ func.diff }}</td>
+              <td><a (click)="deleteFunc($event, func)">X</a></td>
             </tr>
           </tbody>
         </nz-table>
-        <input
-          nz-input
-          nzSize="large"
-          type="text"
-          [(ngModel)]="addingFuncName"
-          style="width: 40%; margin-right: 10px">
-        <input
-          nz-input
-          nzSize="large"
-          type="text"
-          [(ngModel)]="addingFuncDiff"
-          style="width: 40%">
+        <div style="margin-top: 10px">
+          <input
+            nz-input
+            nzSize="large"
+            type="text"
+            [(ngModel)]="addingFuncName"
+            style="width: 35%; margin-right: 10px">
+          <input
+            nz-input
+            nzSize="large"
+            type="text"
+            [(ngModel)]="addingFuncDiff"
+            style="width: 35%; margin-right: 10px">
+          <button
+            nz-button
+            [nzType]="'primary'"
+            [nzSize]="'large'"
+            (click)="addFunc()"
+            style="width: 25%"
+          >Добавить</button>
+        </div>
       </div>
     </div>
   </div>
