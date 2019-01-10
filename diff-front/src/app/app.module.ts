@@ -19,6 +19,7 @@ import {AuthGuard} from "./auth/auth.guard";
 import { LoginPageComponent } from './login-page/login-page.component';
 import { VkToolsComponent } from './vk-tools/vk-tools.component';
 import {VkService} from "./vk-tools/vk.service";
+import {DiffTableService} from "./diff/diffTable.service";
 
 registerLocaleData(en);
 
@@ -47,6 +48,7 @@ registerLocaleData(en);
     { provide: NZ_I18N, useValue: en_US },
     AuthService,
     VkService,
+    DiffTableService,
   ],
   bootstrap: [AppComponent]
 })

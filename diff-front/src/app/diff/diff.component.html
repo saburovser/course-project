@@ -12,6 +12,7 @@
           style="width: 88%"
         >
         <button
+          *ngIf="!isMultivariable"
           nz-button
           [nzType]="'primary'"
           [nzSize]="'large'"
@@ -23,8 +24,49 @@
           <!--<span style="font-size: 16px; border: 1px solid black; border-radius: 1000px; padding: 5px; margin-right: 2px"-->
                 <!--*ngFor="let term of terms">{{ term.view + " " }}</span>-->
         <!--</div>-->
+        <p *ngIf="isMultivariable">Выберите переменную дифференцирования:</p>
+        <nz-radio-group style="margin-top: 5px;" *ngIf="isMultivariable" [(ngModel)]="selectedVariable" nzName="selectedVariable">
+          <label *ngFor="let variable of variables" nz-radio [nzValue]="variable">{{ variable }}</label>
+        </nz-radio-group>
+        <nz-alert *ngIf="res && res.length" style="margin-top: 5px" nzType="success" [nzMessage]="res"></nz-alert>
+        <button
+          *ngIf="isMultivariable"
+          nz-button
+          [nzType]="'primary'"
+          [nzSize]="'large'"
+          (click)="diffMulti()"
+        >DIFF</button>
       </div>
-      <div nz-col [nzSpan]="12"></div>
+
+      <!--Таблица-список функций-->
+      <div nz-col [nzSpan]="12">
+        <nz-table #diffTable [nzData]="diffs">
+          <thead>
+            <tr>
+              <th>Функция</th>
+              <th>Производная</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let func of diffTable.data">
+              <td>{{ func.func }}</td>
+              <td>{{ func.diff }}</td>
+            </tr>
+          </tbody>
+        </nz-table>
+        <input
+          nz-input
+          nzSize="large"
+          type="text"
+          [(ngModel)]="addingFuncName"
+          style="width: 40%; margin-right: 10px">
+        <input
+          nz-input
+          nzSize="large"
+          type="text"
+          [(ngModel)]="addingFuncDiff"
+          style="width: 40%">
+      </div>
     </div>
   </div>
 </div>

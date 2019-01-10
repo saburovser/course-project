@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {DiffTableService} from "./diffTable.service";
 
 @Component({
   selector: 'app-diff',
@@ -9,6 +10,14 @@ export class DiffComponent implements OnInit {
   func: string = '';
   errors: string[] = [];
   terms: any[] = [];
+  tree: Node;
+  res: string;
+
+  variables: string[] = [];
+  selectedVariable: string = '';
+  isMultivariable: boolean = false;
+
+  addingFuncName:
 
   operators = [
     '+',
@@ -35,7 +44,18 @@ export class DiffComponent implements OnInit {
     'ctg',
   ];
 
-  constructor() {
+  diffs: {func: string, diff: string}[] = [
+    {
+      func: 'sin(x)',
+      diff: 'cos(x)',
+    },
+    {
+      func: 'cos(x)',
+      diff: '-sin(x)'
+    }
+  ];
+
+  constructor(private diffTableService: DiffTableService) {
 
   }
 
@@ -156,7 +176,23 @@ export class DiffComponent implements OnInit {
   }
 
   diff() {
-    console.log(this.getTree(this.func));
+    // @ts-ignore
+    this.tree = this.getTree(this.func);
+
+    this.res = '';
+    this.isMultivariable = false;
+
+    if (this.variables.length === 1) {
+      this.res = this.getNodeDiff(this.tree);
+    } else {
+      this.isMultivariable = true;
+    }
+    console.log(this.tree, this.res, this.variables);
+    // debugger;
+  }
+
+  diffMulti() {
+    this.isMultivariable = false;
   }
 
   getTree(exp: string) {
@@ -170,7 +206,11 @@ export class DiffComponent implements OnInit {
         try {
           block = this.getFunction(exp);
         } catch (e) {
-          block = new Node(NodeTypes.Constant, ch, ch.length);
+          block = new Node(NodeTypes.Variable, ch, ch.length);
+
+          if (this.variables.indexOf(ch) === -1) {
+            this.variables.push(ch);
+          }
         } finally {
           output.push(block);
         }
@@ -196,12 +236,11 @@ export class DiffComponent implements OnInit {
     while (stack.length) {
       output.push(stack.pop());
     }
-    console.log(output);
     // this.terms = output;
 
     let tree = {};
     let treeStack = [];
-    debugger;
+    // debugger;
     output.filter( el => {
       if (el.type === NodeTypes.Function) {
         treeStack.push(new Node(NodeTypes.Function, new Func(el.value.name, this.getTree(el.value.arg))));
@@ -216,6 +255,9 @@ export class DiffComponent implements OnInit {
         treeStack.push(tree);
       }
     });
+    if (treeStack.length === 1) {
+      return treeStack[0];
+    }
     return tree;
   }
 
@@ -296,6 +338,49 @@ export class DiffComponent implements OnInit {
     }
     return new Node(NodeTypes.Number, num, num.length);
   }
+
+  getNodeView(node: Node): string {
+    switch (node.type) {
+      case NodeTypes.Function:
+        return node.value.name + '(' + this.getNodeView(node.value.arg) + ')';
+      case NodeTypes.Number:
+        return node.value;
+      case NodeTypes.Block:
+        return '(' + node.value + ')';
+      case NodeTypes.Variable:
+        return '(' + node.value + ')';
+      case NodeTypes.Operator:
+        return this.getNodeView(node.value.arg1) + node.value.name + this.getNodeView(node.value.arg2);
+      case NodeTypes.Constant:
+        return '(' + node.value + ')';
+    }
+  }
+
+  getNodeDiff(node: Node): string {
+    switch (node.type) {
+      case NodeTypes.Function:
+        if (node.value.arg.type === NodeTypes.Variable) {
+          return this.diffs.find(el => el.func === node.value.name + '(x)').diff.replace('x', this.getNodeView(node.value.arg));
+        } else if (node.value.arg.type === NodeTypes.Constant) {
+          return '0';
+        }
+        return this.diffs.find(el => el.func === node.value.name + '(x)').diff.replace('x', this.getNodeView(node.value.arg)) + '*(' + this.getNodeDiff(node.value.arg) + ')';
+      case NodeTypes.Variable:
+        return '1';
+      case NodeTypes.Constant:
+        return '0';
+      case NodeTypes.Number:
+        return '0';
+      case NodeTypes.Operator:
+        if (node.value.name === '+' || node.value.name === '-') {
+          return '(' + node.value.arg1.diff + node.value.name + node.value.arg2.diff + ')';
+        } else if (node.value.name === '*') {
+          return '(' + node.value.arg1.diff + '*' + node.value.arg2.view + '+' + node.value.arg2.diff + '*' + node.value.arg1.view + ')';
+        } else if (node.value.name === '/') {
+          return '(' + node.value.arg1.diff + '*' + node.value.arg2.view + '-' + node.value.arg2.diff + '*' + node.value.arg1.view + ')' + '/(' + node.value.arg2.view + ')^2';
+        }
+    }
+  }
 }
 
 export class Node {
@@ -303,21 +388,49 @@ export class Node {
   value: any;
   length: number;
 
-  get view(): string {
-    switch (this.type) {
-      case NodeTypes.Function:
-        return this.value.name + '(' + this.value.arg + ')';
-      case NodeTypes.Number:
-        return this.value;
-      case NodeTypes.Block:
-        return this.value;
-      case NodeTypes.Constant:
-        return this.value;
-      case NodeTypes.Operator:
-        return this.value.view
-    }
+  // get view(): string {
+  //   switch (this.type) {
+  //     case NodeTypes.Function:
+  //       return this.value.name + '(' + this.value.arg.view + ')';
+  //     case NodeTypes.Number:
+  //       return this.value;
+  //     case NodeTypes.Block:
+  //       return '(' + this.value + ')';
+  //     case NodeTypes.Variable:
+  //       return '(' + this.value + ')';
+  //     case NodeTypes.Operator:
+  //       return this.value.view;
+  //     case NodeTypes.Constant:
+  //       return '(' + this.value.view + ')';
+  //   }
+  //
+  // }
 
-  }
+  // get diff(): string {
+  //   switch (this.type) {
+  //     case NodeTypes.Function:
+  //       if (this.value.arg.type === NodeTypes.Variable) {
+  //         return this.diffs[this.value.name] + this.value.arg.view;
+  //       } else if (this.value.arg.type === NodeTypes.Constant) {
+  //         return '0';
+  //       }
+  //       return this.diffs[this.value.name] + '(' + this.value.arg.view + ')' + '*(' + this.value.arg.diff + ')';
+  //     case NodeTypes.Variable:
+  //       return '1';
+  //     case NodeTypes.Constant:
+  //       return '0';
+  //     case NodeTypes.Number:
+  //       return '0';
+  //     case NodeTypes.Operator:
+  //       if (this.value.name === '+' || this.value.name === '-') {
+  //         return '(' + this.value.arg1.diff + this.value.name + this.value.arg2.diff + ')';
+  //       } else if (this.value.name === '*') {
+  //         return '(' + this.value.arg1.diff + '*' + this.value.arg2.view + '+' + this.value.arg2.diff + '*' + this.value.arg1.view + ')';
+  //       } else if (this.value.name === '/') {
+  //         return '(' + this.value.arg1.diff + '*' + this.value.arg2.view + '-' + this.value.arg2.diff + '*' + this.value.arg1.view + ')' + '/(' + this.value.arg2.view + ')^2';
+  //       }
+  //   }
+  // }
 
   constructor(type: number, value: any, length?: number) {
     this.type = type;
@@ -347,9 +460,9 @@ export class Operator {
     this.arg2 = arg2;
   }
 
-  get view(): string {
-    return this.arg1.view + this.name + this.arg2.view;
-  }
+  // get view(): string {
+  //   return this.arg1.view + this.name + this.arg2.view;
+  // }
 }
 
 export enum NodeTypes {
